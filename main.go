@@ -22,6 +22,7 @@ import (
 	"github.com/google/martian/v3/martianhttp"
 	"github.com/google/martian/v3/mitm"
 	"github.com/google/martian/v3/servemux"
+	"shawnma.com/clarity/filter"
 	"shawnma.com/clarity/logging"
 )
 
@@ -60,6 +61,9 @@ func main() {
 	startMitm(p, mux)
 
 	stack := newStack()
+	filter := filter.NewFilter()
+	stack.AddRequestModifier(filter)
+	configure("/filter", filter.HttpHandler(), mux)
 
 	// Redirect API traffic to API server.
 	if *apiAddr != "" {
