@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -99,6 +100,8 @@ func (l *Logger) ModifyResponse(res *http.Response) error {
 	fmt.Fprintln(b, strings.Repeat("-", 80))
 
 	//l.log(b.String())
+	req := res.Request
+	log.Printf("%s %s %s => %s", req.RemoteAddr, req.Method, req.URL, res.Status)
 
 	return nil
 }
