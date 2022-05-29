@@ -9,9 +9,27 @@ import (
 	"shawnma.com/clarity/trie"
 )
 
+// Overall policy for a path
+type Policy struct {
+	// If configured, only the allowed time range will be permitted to access this website
+	// Otherwise, it will be always allowed unless reaches the MaxAllowed duration
+	AllowedRange []TimeRange
+
+	// Max duration allowed for this website.
+	MaxAllowed time.Duration
+
+	// If true, the website will be self-managed up to MaxAllowed duration;
+	// otherwise, the MaxAllowed will be ignored and the website is allowed during the TimeRanges
+	SelfManaged bool
+}
+
 type Entry struct {
-	ExpireTime time.Time
-	Path       string // Path for displaying purpose
+	Path   string
+	Policy Policy
+	// Temporary allowance
+	ExpireTime     time.Time
+	UsedDuration   time.Duration
+	LastAccessTime time.Time
 }
 
 type Filter struct {
