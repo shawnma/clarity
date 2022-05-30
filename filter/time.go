@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type TimeOfDay struct {
@@ -29,12 +30,11 @@ func (t *TimeOfDay) String() string {
 	return fmt.Sprintf("%02d:%02d:%02d", t.Hour, t.Minute, t.Second)
 }
 
-func (t TimeOfDay) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + t.String() + "\""), nil
+func (t TimeOfDay) MarshalYAML() (any, error) {
+	return t.String(), nil
 }
 
-func (t *TimeOfDay) UnmarshalJSON(b []byte) error {
-	s := strings.Trim(string(b), "\"")
+func (t *TimeOfDay) FromString(s string) error {
 	p := strings.Split(s, ":")
 	if len(p) < 2 || len(p) > 3 {
 		return fmt.Errorf("invalid time of day, it should be in hh:mm or hh:mm:ss format: %s", s)
@@ -63,6 +63,14 @@ func (t *TimeOfDay) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (t *TimeOfDay) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	return t.FromString(s)
+}
+
 func (t *TimeOfDay) isBefore(t2 *TimeOfDay) bool {
 	return t.Hour < t2.Hour || (t.Hour == t2.Hour && t.Minute < t2.Minute) ||
 		(t.Hour == t2.Hour && t.Minute == t2.Minute && t.Second < t2.Second)
@@ -71,4 +79,38 @@ func (t *TimeOfDay) isBefore(t2 *TimeOfDay) bool {
 type TimeRange struct {
 	Begin TimeOfDay
 	End   TimeOfDay
+}
+
+func (tr *TimeRange) InRange(t time.Time) bool {
+	t2 := TimeOfDay{int8(t.Hour()), int8(t.Minute()), int8(t.Second())}
+	return tr.Begin.isBefore(&t2) && t2.isBefore(&tr.End)
+}
+
+func NewTimeRange(from, to string) (*TimeRange, error) {
+	var t TimeRange
+	if err := t.Begin.FromString(from); err != nil {
+		return nil, err
+	}
+	if err := t.End.FromString(to); err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func (t TimeRange) MarshalYAML() (any, error) {
+	return t.Begin.String() + " - " + t.End.String(), nil
+}
+
+func (t *TimeRange) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	p := strings.Split(s, "-")
+	if len(p) != 2 {
+		return fmt.Errorf("time range must have two parts separated by '-', got %s", s)
+	}
+	t.Begin.FromString(strings.Trim(p[0], " "))
+	t.End.FromString(strings.Trim(p[1], " "))
+	return nil
 }

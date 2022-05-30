@@ -11,6 +11,8 @@ import (
 
 // Overall policy for a path
 type Policy struct {
+	Path string
+
 	// If configured, only the allowed time range will be permitted to access this website
 	// Otherwise, it will be always allowed unless reaches the MaxAllowed duration
 	AllowedRange []TimeRange
@@ -24,7 +26,6 @@ type Policy struct {
 }
 
 type Entry struct {
-	Path   string
 	Policy Policy
 	// Temporary allowance
 	ExpireTime     time.Time
@@ -41,7 +42,6 @@ func NewFilter() *Filter {
 	f.t = trie.NewPathTrie[*Entry]()
 	f.t.Put("youtube.com", &Entry{
 		ExpireTime: time.Now().Add(time.Hour),
-		Path:       "youtube.com",
 	})
 	return f
 }

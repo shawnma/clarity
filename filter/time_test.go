@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestTimeDay(t *testing.T) {
@@ -58,7 +60,7 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for _, tc := range tests {
 		var tt TimeOfDay
-		err := json.Unmarshal([]byte("\""+tc.input+"\""), &tt)
+		err := yaml.Unmarshal([]byte("\""+tc.input+"\""), &tt)
 		fmt.Printf("input: %s err: %s, got_err: %s, got: %s\n", tc.input, tc.err, err, tt.String())
 		if tc.err != "" && !strings.Contains(err.Error(), tc.err) {
 			t.Errorf("Expected error %s, got: %s", tc.err, err.Error())
