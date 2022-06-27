@@ -63,7 +63,11 @@ func main() {
 	stack := newStack()
 	filter := filter.NewFilter()
 	stack.AddRequestModifier(filter)
-	configure("/filter", filter.HttpHandler(), mux)
+	configure("/config", filter.HttpHandler(), mux)
+
+	// static content serving
+	fs := http.StripPrefix("/filter", http.FileServer(http.Dir("./public/")))
+	configure("/filter/", fs, mux)
 
 	// Redirect API traffic to API server.
 	if *apiAddr != "" {
@@ -167,8 +171,7 @@ func configure(pattern string, handler http.Handler, mux *http.ServeMux) {
 	mux.Handle(path.Join(*apiHost, pattern), handler)
 
 	// register handler for local API server
-	p := path.Join("localhost"+*apiAddr, pattern)
-	mux.Handle(p, handler)
+	mux.Handle(pattern, handler)
 }
 
 func newStack() (grp *fifo.Group) {
