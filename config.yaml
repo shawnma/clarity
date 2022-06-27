@@ -1,0 +1,15 @@
+- path: youtube.com/chat
+  allowedrange:
+    - 10:00:00 - 11:00:00
+    - 21:00:00 - 23:00:00
+  maxallowed: 2h0m0s
+  selfmanaged: false
+- path: heheh
+  allowedrange:
+    - 07:00 - 22:00
+- path: www.google.com
+  allowedrange:
+    - 07:00 - 23:00
+- path: www.google.com/search
+  allowedrange:
+    - 07:00 - 20:50

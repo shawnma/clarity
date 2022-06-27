@@ -12,6 +12,15 @@ import (
 	"github.com/google/martian/v3/messageview"
 )
 
+type HttpPair struct {
+	Url            string
+	Title          string
+	RequestHeader  string
+	RequestBody    string
+	ResponseHeader string
+	ResponseBody   string
+}
+
 // Logger is a modifier that logs requests and responses.
 type Logger struct {
 }
@@ -99,9 +108,9 @@ func (l *Logger) ModifyResponse(res *http.Response) error {
 	fmt.Fprintln(b, "")
 	fmt.Fprintln(b, strings.Repeat("-", 80))
 
-	//l.log(b.String())
+	// log.Print(b.String())
 	req := res.Request
-	log.Printf("%s %s %s => %s", req.RemoteAddr, req.Method, req.URL, res.Status)
+	log.Printf("ACCESS: %s %s %s => %s", req.RemoteAddr, req.Method, req.URL, res.Status)
 
 	return nil
 }
