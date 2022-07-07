@@ -80,6 +80,7 @@ func main() {
 		host := strings.Join(addrParts[:len(addrParts)-1], ":")
 
 		// Forward traffic that pattern matches in http.DefaultServeMux
+		log.Printf("Setting up API fwd at %s:%d", host, port)
 		apif := servemux.NewFilter(mux)
 		apif.SetRequestModifier(mapi.NewForwarder(host, port))
 		stack.AddRequestModifier(apif)

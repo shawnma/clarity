@@ -77,15 +77,15 @@ func (h *Filter) HttpHandler() http.Handler {
 
 // ModifyRequest return 403 if an entry is matched
 func (f *Filter) ModifyRequest(req *http.Request) error {
-	if req.Method == "CONNECT" {
+	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
 		return nil // proxy connect method, ignore.
 	}
 	ctx := martian.NewContext(req)
 	url := req.URL
 	path := url.Hostname() + url.Path
-	log.Printf("Filter: %s", path)
+	// log.Printf("Filter: %s host %s", path, url.Hostname())
 	err := f.t.WalkPath(path, func(key string, value *Entry) error {
-		log.Printf("walking %s", key)
+		// log.Printf("walking %s", key)
 		if value.ExpireTime != nil && value.ExpireTime.After(time.Now()) {
 			// TODO: update last access time?
 			log.Printf("path %s allowed as it is has not expired", key)
