@@ -5,32 +5,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/google/martian/v3"
-	"gopkg.in/yaml.v3"
+	"shawnma.com/clarity/config"
 	"shawnma.com/clarity/trie"
 )
 
-// Overall policy for a path
-type Policy struct {
-	Path string
-
-	// If configured, only the allowed time range will be permitted to access this website
-	// Otherwise, it will be always allowed unless reaches the MaxAllowed duration
-	AllowedRange []TimeRange
-
-	// Max duration allowed for this website.
-	MaxAllowed time.Duration
-
-	// If true, the website will be self-managed up to MaxAllowed duration;
-	// otherwise, the MaxAllowed will be ignored and the website is allowed during the TimeRanges
-	SelfManaged bool
-}
-
 type Entry struct {
-	Policy Policy
+	Policy config.Policy
 	// Temporary allowance
 	ExpireTime     *time.Time
 	UsedDuration   time.Duration
@@ -41,19 +24,11 @@ type Filter struct {
 	t *trie.PathTrie[*Entry]
 }
 
-func NewFilter() *Filter {
+func NewFilter(config *config.Config) *Filter {
 	f := &Filter{}
 	f.t = trie.NewPathTrie[*Entry]()
-	data, err := os.ReadFile("config.yaml")
-	if err != nil {
-		log.Fatal("Unable to open config file config.yaml")
-	}
-	var polices []Policy
-	err = yaml.Unmarshal(data, &polices)
-	if err != nil {
-		log.Fatalf("Unable to parse config: %s", err)
-	}
-	for _, p := range polices {
+
+	for _, p := range config.Policies {
 		log.Printf("Loading policy: %v", p)
 		f.t.Put(p.Path, &Entry{Policy: p})
 	}

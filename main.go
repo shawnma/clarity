@@ -22,6 +22,7 @@ import (
 	"github.com/google/martian/v3/martianhttp"
 	"github.com/google/martian/v3/mitm"
 	"github.com/google/martian/v3/servemux"
+	"shawnma.com/clarity/config"
 	"shawnma.com/clarity/filter"
 	"shawnma.com/clarity/logging"
 )
@@ -42,6 +43,7 @@ var (
 func main() {
 	flag.Parse()
 	martian.Init() // log level
+	config := config.NewConfig()
 
 	p := martian.NewProxy()
 	defer p.Close()
@@ -60,8 +62,8 @@ func main() {
 	mux := http.NewServeMux()
 	startMitm(p, mux)
 
-	stack := newStack()
-	filter := filter.NewFilter()
+	stack := newStack(config)
+	filter := filter.NewFilter(config)
 	stack.AddRequestModifier(filter)
 	configure("/config", filter.HttpHandler(), mux)
 
@@ -175,9 +177,9 @@ func configure(pattern string, handler http.Handler, mux *http.ServeMux) {
 	mux.Handle(pattern, handler)
 }
 
-func newStack() (grp *fifo.Group) {
+func newStack(c *config.Config) (grp *fifo.Group) {
 	grp = fifo.NewGroup()
-	logger := logging.NewLogger()
+	logger := logging.NewLogger(c)
 	grp.AddRequestModifier(logger) // required to save a copy of the request
 	grp.AddResponseModifier(logger)
 	grp.AddRequestModifier(header.NewBadFramingModifier())

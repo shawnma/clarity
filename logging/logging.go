@@ -3,7 +3,7 @@ package logging
 import (
 	"fmt"
 	"io"
-	logger "log"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/messageview"
+	"shawnma.com/clarity/config"
 )
 
 type HttpLog struct {
@@ -43,8 +44,12 @@ type Logger struct {
 
 // NewLogger returns a logger that logs requests and responses, optionally
 // logging the body. Log function defaults to martian.Infof.
-func NewLogger() *Logger {
-	return &Logger{&ConsoleLogger{}}
+func NewLogger(c *config.Config) *Logger {
+	l, e := NewAccessLogger(c)
+	if e != nil {
+		log.Fatalf("Unable to create access logger: %s", e)
+	}
+	return &Logger{l}
 }
 
 // ModifyRequest simply put all the request header and body into the context for later use
@@ -111,17 +116,17 @@ func (l *Logger) ModifyResponse(res *http.Response) error {
 	if !ok {
 		return fmt.Errorf("unable to find log object in request for %s", res.Request.URL)
 	}
-	log := httpLog.(*HttpLog)
+	h := httpLog.(*HttpLog)
 
 	ct := res.Header.Get("Content-Type")
-	log.ResponseCode = res.StatusCode
-	log.ResponseContentType = ct
+	h.ResponseCode = res.StatusCode
+	h.ResponseContentType = ct
 	length := res.Header.Get("Content-Length")
 	if length != "" {
 		if l, e := strconv.Atoi(length); e == nil {
-			log.ResponseLength = l
+			h.ResponseLength = l
 		} else {
-			logger.Printf("unable to parse length %s: %s\n", length, e)
+			log.Printf("unable to parse length %s: %s\n", length, e)
 		}
 	}
 
@@ -146,9 +151,9 @@ func (l *Logger) ModifyResponse(res *http.Response) error {
 		b = string(r)
 		match := titleExp.FindStringSubmatch(b)
 		if len(match) > 1 {
-			log.Title = match[1]
+			h.Title = match[1]
 		}
 	}
-	l.log.Log(log)
+	l.log.Log(h)
 	return nil
 }
