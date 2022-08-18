@@ -32,6 +32,8 @@ type LogsConfig struct {
 type Config struct {
 	Policies []Policy
 	Logs     LogsConfig
+	// Hosts that have pinned certificates, e.g., icloud
+	SkipProxy []string `yaml:"skip-proxy"`
 }
 
 func NewConfig() *Config {
@@ -44,6 +46,6 @@ func NewConfig() *Config {
 	if err != nil {
 		log.Fatalf("Unable to parse config: %s", err)
 	}
-	log.Printf("%v", config.Logs)
+	log.Printf("%v", config.SkipProxy)
 	return &config
 }

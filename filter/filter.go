@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/martian/v3"
@@ -22,6 +23,8 @@ type Entry struct {
 
 type Filter struct {
 	t *trie.PathTrie[*Entry]
+	// skipped hosts
+	skip *trie.PathTrie[bool]
 }
 
 func NewFilter(config *config.Config) *Filter {
@@ -32,7 +35,20 @@ func NewFilter(config *config.Config) *Filter {
 		log.Printf("Loading policy: %v", p)
 		f.t.Put(p.Path, &Entry{Policy: p})
 	}
+
+	f.skip = trie.NewPathTrie[bool]()
+	for _, h := range config.SkipProxy {
+		h = strings.ReplaceAll(h, "*.", "")
+		h = reverseHostname(h)
+		f.skip.Put(h, true)
+	}
 	return f
+}
+
+func reverseHostname(h string) string {
+	p := strings.Split(h, ".")
+	ReverseSlice(p)
+	return strings.Join(p, "/")
 }
 
 func (h *Filter) HttpHandler() http.Handler {
@@ -54,6 +70,12 @@ func (h *Filter) HttpHandler() http.Handler {
 func (f *Filter) ModifyRequest(req *http.Request) error {
 	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
 		return nil // proxy connect method, ignore.
+	}
+	h := reverseHostname(req.URL.Hostname())
+	if f.skip.Search(h) {
+		log.Printf("Skipping host %s", req.URL.Hostname())
+		// TODO: also skip MITM
+		return nil
 	}
 	ctx := martian.NewContext(req)
 	url := req.URL
@@ -88,4 +110,14 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 		conn.Close()
 	}
 	return nil
+}
+
+func ReverseSlice[T any](s []T) {
+	first := 0
+	last := len(s) - 1
+	for first < last {
+		s[first], s[last] = s[last], s[first]
+		first++
+		last--
+	}
 }

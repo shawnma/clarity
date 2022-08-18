@@ -62,11 +62,7 @@ func (trie *PathTrie[T]) Search(key string) (t T) {
 	for part, i := pathSegmenter(key, 0); part != ""; part, i = pathSegmenter(key, i) {
 		child := node.children[part]
 		if child == nil {
-			if i > 0 {
-				return node.value
-			} else {
-				return *new(T)
-			}
+			return node.value
 		}
 		node = child
 	}
