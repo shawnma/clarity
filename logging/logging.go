@@ -56,7 +56,7 @@ func NewLogger(c *config.Config) *Logger {
 func (l *Logger) ModifyRequest(req *http.Request) error {
 	var httpLog HttpLog
 
-	ct := req.Header.Get("Content-Type")
+	ct := sanitizeContentType(req.Header.Get("Content-Type"))
 	httpLog.RequestContentType = ct
 	length := req.Header.Get("Content-Length")
 	if length != "" {
@@ -118,7 +118,7 @@ func (l *Logger) ModifyResponse(res *http.Response) error {
 	}
 	h := httpLog.(*HttpLog)
 
-	ct := res.Header.Get("Content-Type")
+	ct := sanitizeContentType(res.Header.Get("Content-Type"))
 	h.ResponseCode = res.StatusCode
 	h.ResponseContentType = ct
 	length := res.Header.Get("Content-Length")
@@ -156,4 +156,11 @@ func (l *Logger) ModifyResponse(res *http.Response) error {
 	}
 	l.log.Log(h)
 	return nil
+}
+
+func sanitizeContentType(ct string) string {
+	if strings.Contains(ct, ";") {
+		return strings.Split(ct, ";")[0]
+	}
+	return ct
 }
