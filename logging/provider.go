@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"shawnma.com/clarity/config"
@@ -13,11 +14,7 @@ import (
 type consoleLogger struct{}
 
 func (c *consoleLogger) Log(l *HttpLog) {
-	log.Printf("ACCESS: [%s | %s][%s | %d | %s][%d | %s | %d | %s] %s",
-		l.RemoteAddr, l.Method,
-		l.RequestContentType, l.RequestLength, l.RequestBody,
-		l.ResponseCode, l.ResponseContentType, l.ResponseLength, l.Title,
-		l.Url)
+	log.Printf("ACCESS: %s", l)
 }
 
 type MysqlLogger struct {
@@ -41,7 +38,16 @@ func newMysqlLogger(c *config.Config) (*MysqlLogger, error) {
 }
 
 func (logger *MysqlLogger) Log(l *HttpLog) {
-
+	stmt := `INSERT INTO LOG(RemoteAddr, Method,RequestContentType,RequestLength,RequestBody,
+		ResponseCode,ResponseContentType,ResponseLength,ResponseBody,Title,URL,LogTime)
+		 VALUES (?, ?, ?, ?,?,?,?,?,?,?,?,?)`
+	_, e := logger.db.Exec(stmt, l.RemoteAddr, l.Method,
+		l.RequestContentType, l.RequestLength, l.RequestBody,
+		l.ResponseCode, l.ResponseContentType, l.ResponseLength, l.ResponseBody, l.Title,
+		l.Url, time.Now())
+	if e != nil {
+		log.Printf("Unable to log to DB: %s, DATA: %s", e, l)
+	}
 }
 
 func NewAccessLogger(c *config.Config) (AccessLogger, error) {

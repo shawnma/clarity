@@ -31,6 +31,14 @@ type HttpLog struct {
 	Title               string
 }
 
+func (l *HttpLog) String() string {
+	return fmt.Sprintf("[%s | %s][%s | %d | %s][%d | %s | %d | %s | %s] %s",
+		l.RemoteAddr, l.Method,
+		l.RequestContentType, l.RequestLength, l.RequestBody,
+		l.ResponseCode, l.ResponseContentType, l.ResponseLength, l.ResponseBody, l.Title,
+		l.Url)
+}
+
 var titleExp = regexp.MustCompile(`(?i)<title>([^<>]*)</title>`)
 
 type AccessLogger interface {
