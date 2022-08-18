@@ -10,3 +10,5 @@ require (
 	golang.org/x/text v0.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+replace github.com/google/martian/v3 => github.com/shawnma/martian/v3 v3.3.3

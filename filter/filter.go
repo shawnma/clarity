@@ -68,16 +68,16 @@ func (h *Filter) HttpHandler() http.Handler {
 
 // ModifyRequest return 403 if an entry is matched
 func (f *Filter) ModifyRequest(req *http.Request) error {
-	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
-		return nil // proxy connect method, ignore.
-	}
+	ctx := martian.NewContext(req)
 	h := reverseHostname(req.URL.Hostname())
 	if f.skip.Search(h) {
 		log.Printf("Skipping host %s", req.URL.Hostname())
-		// TODO: also skip MITM
+		ctx.Session().SkipMitm()
 		return nil
 	}
-	ctx := martian.NewContext(req)
+	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
+		return nil // proxy connect method, ignore.
+	}
 	url := req.URL
 	path := url.Hostname() + url.Path
 	// log.Printf("Filter: %s host %s", path, url.Hostname())

@@ -19,6 +19,7 @@ import (
 	"github.com/google/martian/v3/cors"
 	"github.com/google/martian/v3/fifo"
 	"github.com/google/martian/v3/header"
+	mlog "github.com/google/martian/v3/log"
 	"github.com/google/martian/v3/martianhttp"
 	"github.com/google/martian/v3/mitm"
 	"github.com/google/martian/v3/servemux"
@@ -38,11 +39,12 @@ var (
 	validity      = flag.Duration("validity", time.Hour, "window of time that MITM certificates are valid")
 	allowCORS     = flag.Bool("cors", false, "allow CORS requests to configure the proxy")
 	skipTLSVerify = flag.Bool("skip-tls-verify", false, "skip TLS server verification; insecure")
+	level         = flag.Int("v", 0, "log level")
 )
 
 func main() {
 	flag.Parse()
-	martian.Init() // log level
+	mlog.SetLevel(*level)
 	config := config.NewConfig()
 
 	p := martian.NewProxy()
