@@ -73,6 +73,9 @@ func (l *Logger) ModifyRequest(req *http.Request) error {
 		}
 	}
 	httpLog.Url = req.URL.String()
+	if len(httpLog.Url) > 1000 {
+		httpLog.Url = httpLog.Url[:1000]
+	}
 	httpLog.Method = req.Method
 	httpLog.RemoteAddr = req.RemoteAddr
 
