@@ -18,6 +18,11 @@ logs:
   provider: db
   config:
     url: shawn:password@/clarity
+  skip-logging:
+    - play.google.com/log
+    - latex.artofproblemsolving.com
+    - cdn.artofproblemsolving.com
+
 skip-proxy:
   - '*.icloud.com'
   - '*.apple.com'

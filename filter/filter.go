@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/martian/v3"
 	"shawnma.com/clarity/config"
-	"shawnma.com/clarity/trie"
+	trie "shawnma.com/clarity/util"
 )
 
 type Entry struct {

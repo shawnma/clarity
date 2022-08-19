@@ -27,6 +27,8 @@ type Policy struct {
 type LogsConfig struct {
 	Provider string
 	Config   map[string]string
+	// Don't log these garbage hosts/path (or host + / + path)
+	SkipLogging []string `yaml:"skip-logging"`
 }
 
 type Config struct {

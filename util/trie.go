@@ -1,6 +1,6 @@
 // Refactored from https://github.com/dghubble/trie/blob/master/path_trie.go
 
-package trie
+package util
 
 import (
 	"strings"

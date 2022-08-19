@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/messageview"
 	"shawnma.com/clarity/config"
+	"shawnma.com/clarity/util"
 )
 
 type HttpLog struct {
@@ -45,23 +47,34 @@ type AccessLogger interface {
 	Log(httpLog *HttpLog)
 }
 
-// Logger is a modifier that logs requests and responses.
-type Logger struct {
-	log AccessLogger
+// logger is a modifier that logs requests and responses.
+type logger struct {
+	log          AccessLogger
+	skippedPaths util.Set[string]
 }
 
 // NewLogger returns a logger that logs requests and responses, optionally
 // logging the body. Log function defaults to martian.Infof.
-func NewLogger(c *config.Config) *Logger {
+func NewLogger(c *config.Config) martian.RequestResponseModifier {
 	l, e := NewAccessLogger(c)
 	if e != nil {
 		log.Fatalf("Unable to create access logger: %s", e)
 	}
-	return &Logger{l}
+	var s util.Set[string] = make(util.Set[string])
+	for _, k := range c.Logs.SkipLogging {
+		s.Add(k)
+	}
+	return &logger{l, s}
 }
 
 // ModifyRequest simply put all the request header and body into the context for later use
-func (l *Logger) ModifyRequest(req *http.Request) error {
+func (l *logger) ModifyRequest(req *http.Request) error {
+	ctx := martian.NewContext(req)
+	if l.shouldSkip(req.URL) {
+		// log.Printf("Skipped logging for %s", req.URL)
+		ctx.SkipLogging()
+		return nil
+	}
 	var httpLog HttpLog
 
 	ct := sanitizeContentType(req.Header.Get("Content-Type"))
@@ -97,12 +110,11 @@ func (l *Logger) ModifyRequest(req *http.Request) error {
 		httpLog.RequestBody = b
 	}
 
-	ctx := martian.NewContext(req)
 	ctx.Set("log", &httpLog)
 	return nil
 }
 
-func (*Logger) readBody(mv *messageview.MessageView) (string, error) {
+func (*logger) readBody(mv *messageview.MessageView) (string, error) {
 	opts := []messageview.Option{messageview.Decode()}
 	r, err := mv.BodyReader(opts...)
 	if err != nil {
@@ -116,13 +128,12 @@ func (*Logger) readBody(mv *messageview.MessageView) (string, error) {
 }
 
 // ModifyResponse logs the response, optionally including the body.
-func (l *Logger) ModifyResponse(res *http.Response) error {
+func (l *logger) ModifyResponse(res *http.Response) error {
 	ctx := martian.NewContext(res.Request)
 	if ctx.SkippingLogging() {
 		return nil
 	}
 
-	//l.logRequest(res.Request, b)
 	httpLog, ok := ctx.Get("log")
 	if !ok {
 		return fmt.Errorf("unable to find log object in request for %s", res.Request.URL)
@@ -174,4 +185,9 @@ func sanitizeContentType(ct string) string {
 		return strings.Split(ct, ";")[0]
 	}
 	return ct
+}
+
+func (l *logger) shouldSkip(u *url.URL) bool {
+	fullPath := u.Hostname() + u.Path
+	return l.skippedPaths.Has(u.Hostname()) || l.skippedPaths.Has(fullPath)
 }
