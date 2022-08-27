@@ -50,7 +50,7 @@ type AccessLogger interface {
 // logger is a modifier that logs requests and responses.
 type logger struct {
 	log          AccessLogger
-	skippedPaths util.Set[string]
+	skippedPaths util.UrlMatch[bool]
 }
 
 // NewLogger returns a logger that logs requests and responses, optionally
@@ -60,9 +60,9 @@ func NewLogger(c *config.Config) martian.RequestResponseModifier {
 	if e != nil {
 		log.Fatalf("Unable to create access logger: %s", e)
 	}
-	var s util.Set[string] = make(util.Set[string])
+	var s util.UrlMatch[bool]
 	for _, k := range c.Logs.SkipLogging {
-		s.Add(k)
+		s.Add(k, true)
 	}
 	return &logger{l, s}
 }
@@ -71,7 +71,7 @@ func NewLogger(c *config.Config) martian.RequestResponseModifier {
 func (l *logger) ModifyRequest(req *http.Request) error {
 	ctx := martian.NewContext(req)
 	if l.shouldSkip(req.URL) {
-		// log.Printf("Skipped logging for %s", req.URL)
+		log.Printf("Skipped logging for %s", req.URL)
 		ctx.SkipLogging()
 		return nil
 	}
@@ -188,6 +188,5 @@ func sanitizeContentType(ct string) string {
 }
 
 func (l *logger) shouldSkip(u *url.URL) bool {
-	fullPath := u.Hostname() + u.Path
-	return l.skippedPaths.Has(u.Hostname()) || l.skippedPaths.Has(fullPath)
+	return l.skippedPaths.Match(u.Hostname(), u.Path)
 }

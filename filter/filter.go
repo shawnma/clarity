@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/martian/v3"
 	"shawnma.com/clarity/config"
-	trie "shawnma.com/clarity/util"
+	"shawnma.com/clarity/util"
 )
 
 type Entry struct {
@@ -22,33 +22,26 @@ type Entry struct {
 }
 
 type Filter struct {
-	t *trie.PathTrie[*Entry]
+	t *util.PathTrie[*Entry]
 	// skipped hosts
-	skip *trie.PathTrie[bool]
+	skip *util.UrlMatch[bool]
 }
 
 func NewFilter(config *config.Config) *Filter {
 	f := &Filter{}
-	f.t = trie.NewPathTrie[*Entry]()
+	f.t = util.NewPathTrie[*Entry]()
 
 	for _, p := range config.Policies {
 		log.Printf("Loading policy: %v", p)
 		f.t.Put(p.Path, &Entry{Policy: p})
 	}
 
-	f.skip = trie.NewPathTrie[bool]()
+	f.skip = &util.UrlMatch[bool]{}
 	for _, h := range config.SkipProxy {
 		h = strings.ReplaceAll(h, "*.", "")
-		h = reverseHostname(h)
-		f.skip.Put(h, true)
+		f.skip.Add(h, true)
 	}
 	return f
-}
-
-func reverseHostname(h string) string {
-	p := strings.Split(h, ".")
-	ReverseSlice(p)
-	return strings.Join(p, "/")
 }
 
 func (h *Filter) HttpHandler() http.Handler {
@@ -69,8 +62,8 @@ func (h *Filter) HttpHandler() http.Handler {
 // ModifyRequest return 403 if an entry is matched
 func (f *Filter) ModifyRequest(req *http.Request) error {
 	ctx := martian.NewContext(req)
-	h := reverseHostname(req.URL.Hostname())
-	if f.skip.Search(h) {
+	url := req.URL
+	if f.skip.Match(url.Hostname(), url.Path) {
 		log.Printf("Skipping host %s", req.URL.Hostname())
 		ctx.Session().SkipMitm()
 		return nil
@@ -78,7 +71,6 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
 		return nil // proxy connect method, ignore.
 	}
-	url := req.URL
 	path := url.Hostname() + url.Path
 	// log.Printf("Filter: %s host %s", path, url.Hostname())
 	err := f.t.WalkPath(path, func(key string, value *Entry) error {
@@ -110,14 +102,4 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 		conn.Close()
 	}
 	return nil
-}
-
-func ReverseSlice[T any](s []T) {
-	first := 0
-	last := len(s) - 1
-	for first < last {
-		s[first], s[last] = s[last], s[first]
-		first++
-		last--
-	}
 }

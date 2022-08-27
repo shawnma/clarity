@@ -24,5 +24,5 @@ logs:
     - cdn.artofproblemsolving.com
 
 skip-proxy:
-  - '*.icloud.com'
-  - '*.apple.com'
+  - 'icloud.com'
+  - 'apple.com'
