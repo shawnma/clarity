@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,6 +24,8 @@ type Filter struct {
 	t *util.PathTrie[*Entry]
 	// skipped hosts
 	skip *util.UrlMatch[bool]
+	// blacklisted hosts
+	blocked *util.UrlMatch[bool]
 }
 
 func NewFilter(config *config.Config) *Filter {
@@ -41,22 +42,14 @@ func NewFilter(config *config.Config) *Filter {
 		h = strings.ReplaceAll(h, "*.", "")
 		f.skip.Add(h, true)
 	}
-	return f
-}
 
-func (h *Filter) HttpHandler() http.Handler {
-	fn := func(w http.ResponseWriter, req *http.Request) {
-		switch req.Method {
-		case "GET":
-			var e []*Entry
-			h.t.Walk(func(key string, value *Entry) error {
-				e = append(e, value)
-				return nil
-			})
-			json.NewEncoder(w).Encode(e)
-		}
+	f.blocked = &util.UrlMatch[bool]{}
+	for _, h := range config.Blocked {
+		h = strings.ReplaceAll(h, "*.", "")
+		f.blocked.Add(h, true)
 	}
-	return http.HandlerFunc(fn)
+
+	return f
 }
 
 // ModifyRequest return 403 if an entry is matched
@@ -96,7 +89,7 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 		if err != nil {
 			return err
 		}
-		resp := "HTTP/1.1 302 moved\nLocation: https://clarity.proxy/filter\nConnection: Close\n\n"
+		resp := "HTTP/1.1 302 moved\nLocation: https://theswea.com/filter/blocked.html#" + path + "\nConnection: Close\n\n"
 		w.Write([]byte(resp))
 		w.Flush()
 		conn.Close()

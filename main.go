@@ -67,7 +67,7 @@ func main() {
 	stack := newStack(config)
 	filter := filter.NewFilter(config)
 	stack.AddRequestModifier(filter)
-	configure("/config", filter.HttpHandler(), mux)
+	configure("/config/", filter.HttpHandler(), mux)
 
 	// static content serving
 	fs := http.StripPrefix("/filter", http.FileServer(http.Dir("./public/")))
@@ -154,7 +154,7 @@ func startMitm(p *martian.Proxy, mux *http.ServeMux) {
 	p.SetMITM(mc)
 
 	ah := martianhttp.NewAuthorityHandler(x509c)
-	configure("/authority.cer", ah, mux)
+	configure("/filter/ca.cer", ah, mux)
 
 	tl, err := net.Listen("tcp", *tlsAddr)
 	if err != nil {

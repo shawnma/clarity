@@ -1,2 +1,5 @@
 clarity
 *.pem
+__*
+*.swp
+

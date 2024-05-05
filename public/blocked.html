@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Website Blocked</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <style>
+    .minutes {
+      width: 55px
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container mt-4">
+    <h2>Blocked</h2>
+    <div id="message" class="alert alert-primary" role="alert"></div>
+    <div id="detail"></div>
+    <div id="action" style="display: none">
+      I need additional <input type="number" class="minutes" value="10" id="min" /> minutes!
+      <button id="ask" class="btn btn-primary">I promise</button>
+    </div>
+  </div>
+
+  <script>
+    host = location.hash.substring(1);
+    console.log(host);
+    $("#message").text(host + " is blocked.")
+
+    function showPolicy(item) {
+      let allowedRange = "Disallowed";
+      if (item.Policy.AllowedRange && item.Policy.AllowedRange.length > 0) {
+        const range = item.Policy.AllowedRange[0];
+        allowedRange = `${range.Begin.Hour}:${range.Begin.Minute} - ${range.End.Hour}:${range.End.Minute}`;
+      }
+
+      const info = '<ul>' +
+        '<li>Location: ' + item.Policy.Path + '</li>' +
+        '<li>Allowed: ' + allowedRange + '</li>' +
+        '<li>Max allowed: ' + item.Policy.MaxAllowed + '</li>' +
+        '<li>Expiration time: ' + item.ExpireTime + '</li>' +
+        '</ul>';
+      $("#detail").html(info);
+    }
+    $.getJSON('/config/blocked?s=' + host, function (item) {
+      showPolicy(item);
+      $("#action").show();
+    });
+
+
+    $("#ask").on("click", function (e) {
+      e.preventDefault();
+      $.getJSON('/config/set?t=' + $("#min").val() + '&s=' + host, function (item) {
+        showPolicy(item);
+      });
+    })
+
+  </script>
+</body>
+
+</html>

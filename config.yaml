@@ -1,28 +1,46 @@
 policies:
-  - path: youtube.com/chat
+  - path: ""
     allowedrange:
-      - 10:00:00 - 11:00:00
-      - 21:00:00 - 23:00:00
-    maxallowed: 2h0m0s
-    selfmanaged: false
-  - path: heheh
+      - 08:00 - 21:30
+  - path: youtube.com
     allowedrange:
-      - 07:00 - 22:00
-  - path: www.google.com
+      - 20:00 - 21:30
+  - path: www.youtube.com
     allowedrange:
-      - 07:00 - 23:50
-  - path: www.google.com/search
+      - 20:00 - 21:30
+  - path: artofproblemsolving.com/community
     allowedrange:
-      - 07:00 - 20:50
+      - 20:00 - 23:00
+  - path: dnvodcdn.me
+    allowedrange:
+      - 21:00 - 21:01
+  - path: baidu.com
+    allowedrange:
+      - 21:00 - 21:01
+  - path: m.tv
+  - path: dnvodcdn.me
 logs:
-  provider: db
+  provider: console
   config:
     url: shawn:password@/clarity
   skip-logging:
     - play.google.com/log
     - latex.artofproblemsolving.com
     - cdn.artofproblemsolving.com
-
+    - avatar.artofproblemsolving.com
+    - notion.so
+    - safebrowsing.googleapis.com
+    - cloudsink.net
+    - www.googleapis.com
+    - client6.google.com
+    - api.apple-cloudkit.com
+    - docs.google.com
 skip-proxy:
-  - 'icloud.com'
-  - 'apple.com'
+  - icloud.com
+  - icloud.com.cn
+  - api.apple-cloudkit.com
+  - apple.com
+  - mzstatic.com
+  - cdn-apple.com
+  - corp.google.com
+  - zoom.us

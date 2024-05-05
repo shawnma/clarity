@@ -86,6 +86,10 @@ func (tr *TimeRange) InRange(t time.Time) bool {
 	return tr.Begin.isBefore(&t2) && t2.isBefore(&tr.End)
 }
 
+func (tr TimeRange) String() string {
+	return fmt.Sprintf("%s - %s", &tr.Begin, &tr.End)
+}
+
 func NewTimeRange(from, to string) (*TimeRange, error) {
 	var t TimeRange
 	if err := t.Begin.FromString(from); err != nil {

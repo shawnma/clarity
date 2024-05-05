@@ -18,10 +18,6 @@ type Policy struct {
 
 	// Max duration allowed for this website.
 	MaxAllowed time.Duration
-
-	// If true, the website will be self-managed up to MaxAllowed duration;
-	// otherwise, the MaxAllowed will be ignored and the website is allowed during the TimeRanges
-	SelfManaged bool
 }
 
 type LogsConfig struct {
@@ -36,6 +32,8 @@ type Config struct {
 	Logs     LogsConfig
 	// Hosts that have pinned certificates, e.g., icloud
 	SkipProxy []string `yaml:"skip-proxy"`
+	// Compeletely blocked sites
+	Blocked []string
 }
 
 func NewConfig() *Config {

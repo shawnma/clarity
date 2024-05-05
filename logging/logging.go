@@ -71,7 +71,7 @@ func NewLogger(c *config.Config) martian.RequestResponseModifier {
 func (l *logger) ModifyRequest(req *http.Request) error {
 	ctx := martian.NewContext(req)
 	if l.shouldSkip(req.URL) {
-		log.Printf("Skipped logging for %s", req.URL)
+		// log.Printf("Skipped logging for %s", req.URL)
 		ctx.SkipLogging()
 		return nil
 	}
