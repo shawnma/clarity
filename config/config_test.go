@@ -15,7 +15,6 @@ func TestConfig(t *testing.T) {
 		Path:         "youtube.com/chat",
 		AllowedRange: []TimeRange{*r, *r2},
 		MaxAllowed:   2 * time.Hour,
-		SelfManaged:  false,
 	}
 	o, _ := yaml.Marshal(p)
 	fmt.Println(string(o))

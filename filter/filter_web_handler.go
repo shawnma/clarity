@@ -3,6 +3,7 @@ package filter
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -40,8 +41,8 @@ func (f *Filter) getBlockedInfo(req *http.Request) any {
 }
 
 type setResult struct {
-	result  bool
-	message string
+	Result  bool
+	Message string
 }
 
 func (f *Filter) setTemp(req *http.Request) any {
@@ -55,8 +56,13 @@ func (f *Filter) setTemp(req *http.Request) any {
 	if err != nil {
 		return setResult{false, "Minutes is not an interger: " + err.Error()}
 	}
+	if minutes > 60 {
+		return setResult{false, "You can't set the time greater than 1 hour"}
+	}
 	t := time.Now()
-	t.Add(time.Duration(minutes) * time.Minute)
+	d := time.Duration(minutes) * time.Minute
+	log.Printf("ADD DURATION %s %s", host, d)
+	t = t.Add(d)
 	e.ExpireTime = &t
 	return e
 }

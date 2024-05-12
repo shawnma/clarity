@@ -11,9 +11,6 @@ policies:
   - path: artofproblemsolving.com/community
     allowedrange:
       - 20:00 - 23:00
-  - path: dnvodcdn.me
-    allowedrange:
-      - 21:00 - 21:01
   - path: baidu.com
     allowedrange:
       - 21:00 - 21:01

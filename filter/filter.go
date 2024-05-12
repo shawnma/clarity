@@ -57,9 +57,13 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 	ctx := martian.NewContext(req)
 	url := req.URL
 	if f.skip.Match(url.Hostname(), url.Path) {
-		log.Printf("Skipping host %s", req.URL.Hostname())
+		log.Printf("Skipping url %s", url)
 		ctx.Session().SkipMitm()
 		return nil
+	}
+	if f.blocked.Match(url.Hostname(), url.Path) {
+		log.Printf("blocked url %s", url)
+		return hijack(ctx, "HTTP/1.1 400 Bad Request\nConnection: Close\n\n")
 	}
 	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
 		return nil // proxy connect method, ignore.
@@ -67,32 +71,36 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 	path := url.Hostname() + url.Path
 	// log.Printf("Filter: %s host %s", path, url.Hostname())
 	err := f.t.WalkPath(path, func(key string, value *Entry) error {
-		// log.Printf("walking %s", key)
+		log.Printf("walking %s", key)
 		if value.ExpireTime != nil && value.ExpireTime.After(time.Now()) {
 			// TODO: update last access time?
-			log.Printf("path %s allowed as it is has not expired", key)
+			log.Printf("path %s allowed as it is has not expired\n", key)
 			return nil // we have a temp authorization
 		}
 		p := value.Policy
 		for _, r := range p.AllowedRange {
 			if r.InRange(time.Now()) {
-				log.Printf("path %s allowed as it is in range: %v", key, r)
+				log.Printf("path %s allowed as it is in range: %v\n", key, r)
 				return nil
 			}
 		}
 		// rule matched, but neither is allowed, it must be denied
 		return fmt.Errorf("rule denied at path %s when evaluating %+v", key, value)
 	})
+	log.Printf("final decision for %s, %v\n", url, err)
 	if err != nil {
-		log.Default().Println(err)
-		conn, w, err := ctx.Session().Hijack()
-		if err != nil {
-			return err
-		}
-		resp := "HTTP/1.1 302 moved\nLocation: https://theswea.com/filter/blocked.html#" + path + "\nConnection: Close\n\n"
-		w.Write([]byte(resp))
-		w.Flush()
-		conn.Close()
+		return hijack(ctx, "HTTP/1.1 302 moved\nLocation: https://theswea.com/filter/blocked.html#"+path+"\nConnection: Close\n\n")
 	}
+	return nil
+}
+
+func hijack(ctx *martian.Context, resp string) error {
+	conn, w, err := ctx.Session().Hijack()
+	if err != nil {
+		return err
+	}
+	w.Write([]byte(resp))
+	w.Flush()
+	conn.Close()
 	return nil
 }
