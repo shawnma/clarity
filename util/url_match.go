@@ -36,6 +36,27 @@ func (u *UrlMatch[T]) Match(host, path string) (t T) {
 	return t
 }
 
+func (u *UrlMatch[T]) Walk(host, path string, f WalkFunc[T]) error {
+	host = reverseHost(host)
+	return u.paths.WalkPath(host, func(key string, value bool) error {
+		if value {
+			e := u.t.WalkPath(key+path, f)
+			if e != nil {
+				return e
+			}
+		}
+		return nil
+	})
+}
+
+func (u *UrlMatch[T]) Values() (t []T) {
+	u.t.Walk(func(key string, value T) error {
+		t = append(t, value)
+		return nil
+	})
+	return
+}
+
 func reverseHost(host string) string {
 	parts := strings.Split(host, ".")
 	parts = ReverseSlice(parts)

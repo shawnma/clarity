@@ -5,16 +5,13 @@ policies:
   - path: youtube.com
     allowedrange:
       - 20:00 - 21:30
-  - path: www.youtube.com
-    allowedrange:
-      - 20:00 - 21:30
   - path: artofproblemsolving.com/community
     allowedrange:
       - 20:00 - 23:00
   - path: baidu.com
     allowedrange:
       - 21:00 - 21:01
-  - path: m.tv
+  - path: tv
   - path: dnvodcdn.me
 logs:
   provider: console
@@ -41,3 +38,5 @@ skip-proxy:
   - cdn-apple.com
   - corp.google.com
   - zoom.us
+blocked:
+  - doubleclick.net

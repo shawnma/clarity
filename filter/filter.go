@@ -13,6 +13,7 @@ import (
 )
 
 type Entry struct {
+	Id     int
 	Policy config.Policy
 	// Temporary allowance
 	ExpireTime     *time.Time
@@ -21,7 +22,8 @@ type Entry struct {
 }
 
 type Filter struct {
-	t *util.PathTrie[*Entry]
+	// configureable hosts
+	tree *util.UrlMatch[*Entry]
 	// skipped hosts
 	skip *util.UrlMatch[bool]
 	// blacklisted hosts
@@ -30,11 +32,11 @@ type Filter struct {
 
 func NewFilter(config *config.Config) *Filter {
 	f := &Filter{}
-	f.t = util.NewPathTrie[*Entry]()
+	f.tree = &util.UrlMatch[*Entry]{}
 
-	for _, p := range config.Policies {
+	for id, p := range config.Policies {
 		log.Printf("Loading policy: %v", p)
-		f.t.Put(p.Path, &Entry{Policy: p})
+		f.tree.Add(p.Path, &Entry{Id: id, Policy: p})
 	}
 
 	f.skip = &util.UrlMatch[bool]{}
@@ -68,9 +70,9 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 	if req.Method == "CONNECT" || req.URL.Hostname() == "clarity.proxy" {
 		return nil // proxy connect method, ignore.
 	}
-	path := url.Hostname() + url.Path
+	var failedEntry *Entry = nil
 	// log.Printf("Filter: %s host %s", path, url.Hostname())
-	err := f.t.WalkPath(path, func(key string, value *Entry) error {
+	err := f.tree.Walk(url.Hostname(), url.Path, func(key string, value *Entry) error {
 		log.Printf("walking %s", key)
 		if value.ExpireTime != nil && value.ExpireTime.After(time.Now()) {
 			// TODO: update last access time?
@@ -84,12 +86,13 @@ func (f *Filter) ModifyRequest(req *http.Request) error {
 				return nil
 			}
 		}
+		failedEntry = value
 		// rule matched, but neither is allowed, it must be denied
 		return fmt.Errorf("rule denied at path %s when evaluating %+v", key, value)
 	})
 	log.Printf("final decision for %s, %v\n", url, err)
 	if err != nil {
-		return hijack(ctx, "HTTP/1.1 302 moved\nLocation: https://theswea.com/filter/blocked.html#"+path+"\nConnection: Close\n\n")
+		return hijack(ctx, fmt.Sprintf("HTTP/1.1 302 moved\nLocation: https://theswea.com/filter/blocked.html#%d\nConnection: Close\n\n", failedEntry.Id))
 	}
 	return nil
 }

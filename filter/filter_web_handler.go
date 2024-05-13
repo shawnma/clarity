@@ -27,16 +27,18 @@ func (h *Filter) HttpHandler() http.Handler {
 }
 
 func (f *Filter) getSettings() any {
-	var e []*Entry
-	f.t.Walk(func(key string, value *Entry) error {
-		e = append(e, value)
-		return nil
-	})
-	return e
+	return f.tree.Values()
 }
 
 func (f *Filter) getBlockedInfo(req *http.Request) any {
-	e := f.t.Search(req.URL.Query().Get("s"))
+	id, err := strconv.Atoi(req.URL.Query().Get("id"))
+	if err != nil {
+		return setResult{false, "Wrong id"}
+	}
+	e := f.findEntry(id)
+	if e == nil {
+		return setResult{false, fmt.Sprintf("Config id %d not found", id)}
+	}
 	return e
 }
 
@@ -45,13 +47,28 @@ type setResult struct {
 	Message string
 }
 
-func (f *Filter) setTemp(req *http.Request) any {
-	host := req.URL.Query().Get("s")
-	e := f.t.Search(host)
-	if e == nil {
-		return setResult{false, "Couldn't find the config for " + host}
+func (f *Filter) findEntry(id int) *Entry {
+
+	v := f.tree.Values()
+	if v == nil {
+		return nil
 	}
-	fmt.Println(e)
+
+	// should have a map ...
+	for _, e := range v {
+		if e.Id == id {
+			return e
+		}
+	}
+	return nil
+}
+
+func (f *Filter) setTemp(req *http.Request) any {
+	id, err := strconv.Atoi(req.URL.Query().Get("id"))
+	if err != nil {
+		return setResult{false, "Wrong id"}
+	}
+
 	minutes, err := strconv.Atoi(req.URL.Query().Get("t"))
 	if err != nil {
 		return setResult{false, "Minutes is not an interger: " + err.Error()}
@@ -61,7 +78,12 @@ func (f *Filter) setTemp(req *http.Request) any {
 	}
 	t := time.Now()
 	d := time.Duration(minutes) * time.Minute
-	log.Printf("ADD DURATION %s %s", host, d)
+
+	e := f.findEntry(id)
+	if e == nil {
+		return setResult{false, fmt.Sprintf("Config id %d not found", id)}
+	}
+	log.Printf("ADD DURATION %s %s", e.Policy.Path, d)
 	t = t.Add(d)
 	e.ExpireTime = &t
 	return e

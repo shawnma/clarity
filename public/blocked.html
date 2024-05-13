@@ -24,26 +24,40 @@
   </div>
 
   <script>
-    host = location.hash.substring(1);
-    console.log(host);
-    $("#message").text(host + " is blocked.")
+    hostId = location.hash.substring(1);
+    console.log(hostId);
+
+    function format(h) {
+      if (h < 10) {
+        return "0" + h;
+      }
+      return "" + h;
+    }
+
+    function timeString(t) {
+
+      return format(t.Hour) + ":" + format(t.Minute);
+    }
+
+    function expireTime(t) {
+      return t.split(".")[0].replace("T", " ")
+    }
 
     function showPolicy(item) {
-      let allowedRange = "Disallowed";
+      let allowedRange = "Unset";
       if (item.Policy.AllowedRange && item.Policy.AllowedRange.length > 0) {
         const range = item.Policy.AllowedRange[0];
-        allowedRange = `${range.Begin.Hour}:${range.Begin.Minute} - ${range.End.Hour}:${range.End.Minute}`;
+        allowedRange = `${timeString(range.Begin)} - ${timeString(range.End)}`;
       }
 
+      $("#message").text(item.Policy.Path + " is blocked.")
       const info = '<ul>' +
-        '<li>Location: ' + item.Policy.Path + '</li>' +
         '<li>Allowed: ' + allowedRange + '</li>' +
-        '<li>Max allowed: ' + item.Policy.MaxAllowed + '</li>' +
-        '<li>Expiration time: ' + item.ExpireTime + '</li>' +
+        '<li>Expiration time: ' + expireTime(item.ExpireTime) + '</li>' +
         '</ul>';
       $("#detail").html(info);
     }
-    $.getJSON('/config/blocked?s=' + host, function (item) {
+    $.getJSON('/config/blocked?id=' + hostId, function (item) {
       showPolicy(item);
       $("#action").show();
     });
@@ -51,7 +65,7 @@
 
     $("#ask").on("click", function (e) {
       e.preventDefault();
-      $.getJSON('/config/set?t=' + $("#min").val() + '&s=' + host, function (item) {
+      $.getJSON('/config/set?t=' + $("#min").val() + '&id=' + hostId, function (item) {
         showPolicy(item);
       });
     })
